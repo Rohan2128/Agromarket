@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AgroMarket Amravati - Buy and sell fresh crops, vegetables, fruits, grains, spices and dairy products directly from farmers in Amravati, Maharashtra. Find the best prices at local mandis.">
+  <title>AgroMarket Amravati | Fresh Farm Produce - Buy & Sell Agricultural Products</title>
+  
+  <!-- Leaflet CSS for Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ NAVBAR ============ -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <div class="navbar-brand" onclick="navigate('home')">
+        <div class="brand-icon">🌾</div>
+        Agro<span>Market</span>
+      </div>
+
+      <button class="nav-toggle" id="navToggle" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="nav-links" id="navLinks">
+        <button class="nav-link active" data-page="home" onclick="navigate('home')">🏠 Home</button>
+        <button class="nav-link" data-page="shop" onclick="navigate('shop')">🛒 Shop</button>
+        <button class="nav-link" data-page="sell" onclick="navigate('sell')">📦 Sell</button>
+        <button class="nav-link" data-page="map" onclick="navigate('map')">🗺️ Map</button>
+        <button class="nav-link" data-page="cart" onclick="navigate('cart')">
+          🛍️ Cart <span class="badge" id="cartBadge">0</span>
+        </button>
+        <button class="nav-link" data-page="orders" onclick="navigate('orders')">📋 Orders</button>
+      </div>
+
+      <div class="nav-auth" id="navAuth">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ TOAST CONTAINER ============ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <main id="mainContent">
+
+    <!-- ====== HOME PAGE ====== -->
+    <div id="page-home">
+
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-content container">
+          <div class="hero-text">
+            <h1>
+              Fresh From<br>
+              <span class="green">Amravati's</span><br>
+              <span class="highlight">Farms to You</span>
+            </h1>
+            <p>Connect directly with local farmers. Buy fresh crops, vegetables, fruits, and spices at the best prices. Sell your produce to thousands of buyers across Maharashtra.</p>
+            <div class="hero-search">
+              <input type="text" id="heroSearch" placeholder="Search for products, crops, vegetables..." />
+              <button onclick="heroSearchAction()">Search</button>
+            </div>
+            <div class="hero-stats">
+              <div class="stat-item">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Active Farmers</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">2,000+</div>
+                <div class="stat-label">Products Listed</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">10+</div>
+                <div class="stat-label">Market Locations</div>
+              </div>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="hero-grid">
+              <div class="hero-card">
+                <div class="card-emoji">🌾</div>
+                <div class="card-name">Organic Wheat</div>
+                <div class="card-price">₹2,800/quintal</div>
+              </div>
+              <div class="hero-card">
+                <div class="card-emoji">🍊</div>
+                <div class="card-name">Nagpur Orange</div>
+                <div class="card-price">₹80/kg</div>
+              </div>
+              <div class="hero-card">
+                <div class="card-emoji">🥬</div>
+                <div class="card-name">Fresh Veggies</div>
+                <div class="card-price">₹20/kg onwards</div>
+              </div>
+              <div class="hero-card">
+                <div class="card-emoji">🌶️</div>
+                <div class="card-name">Spices</div>
+                <div class="card-price">₹160/kg onwards</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Categories -->
+      <section class="categories-section">
+        <div class="container">
+          <h2 class="section-title">Browse by Category</h2>
+          <p class="section-subtitle">Find the freshest produce across 8 categories from Amravati's farms</p>
+          <div class="categories-grid" id="categoriesGrid">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Featured Products -->
+      <section class="shop-section">
+        <div class="container">
+          <h2 class="section-title">Featured Products</h2>
+          <p class="section-subtitle">Top-rated products from verified farmers in Amravati district</p>
+          <div class="products-grid" id="featuredGrid">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works -->
+      <section class="how-section">
+        <div class="container">
+          <h2 class="section-title">How It Works</h2>
+          <p class="section-subtitle">Simple steps to buy or sell agricultural produce</p>
+          <div class="how-grid">
+            <div class="how-card">
+              <div class="how-number">1</div>
+              <h4>Browse Products</h4>
+              <p>Explore fresh crops, vegetables, fruits, and more from local farmers</p>
+            </div>
+            <div class="how-card">
+              <div class="how-number">2</div>
+              <h4>Add to Cart</h4>
+              <p>Select your items, choose quantity, and add them to your cart</p>
+            </div>
+            <div class="how-card">
+              <div class="how-number">3</div>
+              <h4>Secure Payment</h4>
+              <p>Pay via UPI, Card, Net Banking, or Cash on Delivery</p>
+            </div>
+            <div class="how-card">
+              <div class="how-number">4</div>
+              <h4>Get Delivered</h4>
+              <p>Receive fresh produce at your doorstep or pick up from the mandi</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== SHOP PAGE ====== -->
+    <div id="page-shop" class="hidden">
+      <section class="shop-section" style="padding-top: 100px;">
+        <div class="container">
+          <h2 class="section-title">Shop All Products</h2>
+          <p class="section-subtitle">Browse our full catalog of fresh agricultural produce</p>
+          <div class="shop-header">
+            <div class="shop-filters" id="shopFilters">
+              <!-- Filled dynamically -->
+            </div>
+            <div class="shop-search">
+              <input type="text" id="shopSearchInput" placeholder="Search products..." oninput="filterProducts()" />
+              <button>🔍</button>
+            </div>
+          </div>
+          <div class="products-grid" id="shopGrid">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== SELL PAGE ====== -->
+    <div id="page-sell" class="hidden">
+      <section class="sell-section" style="padding-top: 100px;">
+        <div class="container">
+          <div class="sell-container">
+            <h2 class="section-title">Sell Your Produce</h2>
+            <p class="section-subtitle">List your agricultural products and reach thousands of buyers</p>
+            <div class="sell-form" id="sellForm">
+              <div class="form-group">
+                <label>Product Name *</label>
+                <input type="text" id="sellName" placeholder="e.g., Organic Wheat, Fresh Tomatoes" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Category *</label>
+                  <select id="sellCategory">
+                    <option value="">Select Category</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Price (₹) *</label>
+                  <input type="number" id="sellPrice" placeholder="Enter price" min="1">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Unit *</label>
+                  <select id="sellUnit">
+                    <option value="kg">Per Kg</option>
+                    <option value="quintal">Per Quintal</option>
+                    <option value="dozen">Per Dozen</option>
+                    <option value="litre">Per Litre</option>
+                    <option value="piece">Per Piece</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Available Stock *</label>
+                  <input type="number" id="sellStock" placeholder="Enter quantity" min="1">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Location *</label>
+                <input type="text" id="sellLocation" placeholder="e.g., Amravati City, Morshi">
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="sellDescription" placeholder="Describe your product, quality, freshness..."></textarea>
+              </div>
+              <button class="btn-submit" onclick="submitProduct()">📦 List Product for Sale</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== MAP PAGE ====== -->
+    <div id="page-map" class="hidden">
+      <section class="map-section" style="padding-top: 100px;">
+        <div class="container">
+          <h2 class="section-title">Amravati Market Map</h2>
+          <p class="section-subtitle">Find agricultural markets, mandis, and collection centers across Amravati district</p>
+          <div class="map-container">
+            <div id="map"></div>
+          </div>
+          <div class="map-legend">
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #e53935;"></div>
+              Main APMC Mandi
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #43a047;"></div>
+              Fruit & Vegetable Market
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #ff9800;"></div>
+              Cotton / Grain Market
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: #42a5f5;"></div>
+              General Market
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== CART PAGE ====== -->
+    <div id="page-cart" class="hidden">
+      <section class="cart-section" style="padding-top: 100px;">
+        <div class="container">
+          <h2 class="section-title">Your Cart</h2>
+          <p class="section-subtitle">Review your items before checkout</p>
+          <div id="cartContent">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== CHECKOUT PAGE ====== -->
+    <div id="page-checkout" class="hidden">
+      <section class="checkout-section" style="padding-top: 100px;">
+        <div class="container">
+          <div class="checkout-container" id="checkoutContainer">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== AUTH PAGE ====== -->
+    <div id="page-auth" class="hidden">
+      <section class="auth-section" style="padding-top: 72px;">
+        <div class="container">
+          <div class="auth-container">
+            <div class="auth-card">
+              <div class="auth-header">
+                <div class="auth-icon">🌾</div>
+                <h2>Welcome to AgroMarket</h2>
+                <p>Connect with farmers across Amravati</p>
+              </div>
+              <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+              </div>
+              
+              <!-- Login Form -->
+              <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                  <label>Password</label>
+                  <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+                <div class="form-error" id="loginError">Invalid email or password</div>
+                <button type="submit" class="btn-auth">Login to AgroMarket</button>
+              </form>
+
+              <!-- Register Form -->
+              <form class="auth-form hidden" id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" id="regName" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" id="regEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                  <label>Phone Number</label>
+                  <input type="tel" id="regPhone" placeholder="Enter your phone number" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" placeholder="Create password" required minlength="6">
+                  </div>
+                  <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" placeholder="Confirm password" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>I am a</label>
+                  <select id="regRole">
+                    <option value="buyer">Buyer</option>
+                    <option value="farmer">Farmer / Seller</option>
+                    <option value="both">Both Buyer & Seller</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Location</label>
+                  <input type="text" id="regLocation" placeholder="e.g., Amravati City">
+                </div>
+                <div class="form-error" id="registerError"></div>
+                <button type="submit" class="btn-auth">Create Account</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ====== ORDERS PAGE ====== -->
+    <div id="page-orders" class="hidden">
+      <section class="orders-section" style="padding-top: 100px;">
+        <div class="container">
+          <h2 class="section-title">My Orders</h2>
+          <p class="section-subtitle">Track your order history and delivery status</p>
+          <div class="orders-list" id="ordersList">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>🌾 Agro<span>Market</span></h3>
+          <p>Amravati's premier agricultural marketplace connecting farmers directly with buyers. Fresh produce, fair prices, seamless trading across Amravati district, Maharashtra.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Quick Links</h4>
+          <a href="javascript:void(0)" onclick="navigate('home')">Home</a>
+          <a href="javascript:void(0)" onclick="navigate('shop')">Shop Products</a>
+          <a href="javascript:void(0)" onclick="navigate('sell')">Sell Produce</a>
+          <a href="javascript:void(0)" onclick="navigate('map')">Market Map</a>
+          <a href="javascript:void(0)" onclick="navigate('orders')">My Orders</a>
+        </div>
+        <div class="footer-links">
+          <h4>Categories</h4>
+          <a href="javascript:void(0)" onclick="shopByCategory('crops')">Crops</a>
+          <a href="javascript:void(0)" onclick="shopByCategory('vegetables')">Vegetables</a>
+          <a href="javascript:void(0)" onclick="shopByCategory('fruits')">Fruits</a>
+          <a href="javascript:void(0)" onclick="shopByCategory('spices')">Spices</a>
+          <a href="javascript:void(0)" onclick="shopByCategory('dairy')">Dairy</a>
+        </div>
+        <div class="footer-contact">
+          <h4>Contact Us</h4>
+          <p>📍 APMC Market Yard, Amravati, Maharashtra 444601</p>
+          <p>📞 +91 72182 00000</p>
+          <p>✉️ contact@agromarket-amravati.in</p>
+          <p>🕐 Mon-Sat: 6 AM - 9 PM</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 AgroMarket Amravati. All rights reserved. | Made with ❤️ for farmers of Vidarbha</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============ SCRIPTS ============ -->
+  <!-- Leaflet JS for Maps -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Data -->
+  <script src="data.js"></script>
+  <!-- App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | AgroMarket Amravati</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar scrolled">
+    <div class="navbar-inner">
+      <a class="navbar-brand" href="/"><div class="brand-icon">🌾</div>Agro<span>Market</span></a>
+      <button class="nav-toggle" onclick="document.getElementById('navLinks').classList.toggle('show')">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links" id="navLinks">
+        <a class="nav-link" href="/">🏠 Home</a>
+        <a class="nav-link" href="#" onclick="showTab('cart')">🛍️ Cart <span class="badge" id="cartBadge" style="display:none">0</span></a>
+        <a class="nav-link" href="#" onclick="showTab('orders')">📋 Orders</a>
+        <a class="nav-link" href="#" onclick="showTab('profile')">👤 Profile</a>
+        <a class="nav-link seller-only" href="#" onclick="showTab('sell')" style="display:none">📦 Sell</a>
+        <a class="nav-link seller-only" href="#" onclick="showTab('my-products')" style="display:none">🏪 My Products</a>
+      </div>
+      <div class="nav-auth" id="navAuth"></div>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <main style="padding-top: 90px; min-height: 100vh;">
+    <div class="container">
+      <!-- Dashboard Tabs -->
+      <div class="dash-tabs" id="dashTabs">
+        <button class="dash-tab active" onclick="showTab('cart')">🛍️ Cart</button>
+        <button class="dash-tab" onclick="showTab('orders')">📋 Orders</button>
+        <button class="dash-tab" onclick="showTab('profile')">👤 Profile</button>
+        <button class="dash-tab seller-only" onclick="showTab('sell')" style="display:none">📦 Sell</button>
+        <button class="dash-tab seller-only" onclick="showTab('my-products')" style="display:none">🏪 My Products</button>
+      </div>
+
+      <!-- CART TAB -->
+      <div class="tab-content" id="tab-cart"></div>
+
+      <!-- CHECKOUT TAB -->
+      <div class="tab-content hidden" id="tab-checkout"></div>
+
+      <!-- ORDERS TAB -->
+      <div class="tab-content hidden" id="tab-orders"></div>
+
+      <!-- PROFILE TAB -->
+      <div class="tab-content hidden" id="tab-profile"></div>
+
+      <!-- SELL TAB -->
+      <div class="tab-content hidden" id="tab-sell">
+        <div class="sell-container">
+          <h2 class="section-title">List Your Produce</h2>
+          <p class="section-subtitle">Reach thousands of buyers across Amravati</p>
+          <div class="sell-form">
+            <div class="form-group">
+              <label>Product Name *</label>
+              <input type="text" id="sellName" placeholder="e.g., Organic Wheat" required minlength="2">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Category *</label>
+                <select id="sellCategory" required>
+                  <option value="">Select Category</option>
+                  <option value="crops">🌾 Crops</option>
+                  <option value="vegetables">🥬 Vegetables</option>
+                  <option value="fruits">🍊 Fruits</option>
+                  <option value="grains">🌽 Grains & Cereals</option>
+                  <option value="pulses">🫘 Pulses & Lentils</option>
+                  <option value="spices">🌶️ Spices</option>
+                  <option value="dairy">🥛 Dairy Products</option>
+                  <option value="oilseeds">🌻 Oilseeds</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Price (₹) *</label>
+                <input type="number" id="sellPrice" placeholder="Price" min="1" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Unit *</label>
+                <select id="sellUnit"><option value="kg">Per Kg</option><option value="quintal">Per Quintal</option><option value="dozen">Per Dozen</option><option value="litre">Per Litre</option><option value="piece">Per Piece</option></select>
+              </div>
+              <div class="form-group">
+                <label>Available Stock *</label>
+                <input type="number" id="sellStock" placeholder="Qty" min="1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Location *</label>
+              <input type="text" id="sellLocation" placeholder="e.g., Amravati City" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="sellDescription" placeholder="Describe your product..."></textarea>
+            </div>
+            <button class="btn-submit" onclick="submitProduct()">📦 List Product for Sale</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY PRODUCTS TAB -->
+      <div class="tab-content hidden" id="tab-my-products"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>© 2026 AgroMarket Amravati | 🔒 E2E Encrypted | 📞 7972238796 | ✉️ andhalerohan828@gmail.com</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <script>
+    // ---- Config ----
+    const API = '';
+    const ENCRYPTION_KEY = 'agromarket_e2e_encryption_key_256bit!';
+    const UPI_ID = 'andhalerohan828@oksbi';
+    let token = localStorage.getItem('agromarket_token');
+    let currentUser = JSON.parse(localStorage.getItem('agromarket_user') || 'null');
+    let cart = JSON.parse(localStorage.getItem('agromarket_cart') || '[]');
+    let checkoutStep = 1;
+    let selectedPayment = null;
+    let savedAddress = null;
+
+    // Redirect if not logged in
+    if (!token || !currentUser) { window.location.href = '/auth'; }
+
+    // ---- Encryption ----
+    function encrypt(data) { return CryptoJS.AES.encrypt(JSON.stringify(data), ENCRYPTION_KEY).toString(); }
+
+    // ---- API Helper ----
+    async function apiFetch(url, opts = {}) {
+      opts.headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...opts.headers };
+      const res = await fetch(API + url, opts);
+      return res.json();
+    }
+
+    // ---- Toast ----
+    function showToast(msg, type='info') {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = 'toast ' + type;
+      const icons = {success:'✅',error:'❌',info:'ℹ️'};
+      t.innerHTML = `<span>${icons[type]||'ℹ️'}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(100px)';setTimeout(()=>t.remove(),300);},3000);
+    }
+
+    // ---- Init ----
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNav();
+      showSellerTabs();
+      updateCartBadge();
+      showTab('cart');
+    });
+
+    function renderNav() {
+      const auth = document.getElementById('navAuth');
+      if (currentUser) {
+        const init = currentUser.name.split(' ').map(n=>n[0]).join('').toUpperCase();
+        auth.innerHTML = `<div class="user-menu" onclick="showTab('profile')"><div class="user-avatar">${init}</div><span class="user-name">${currentUser.name.split(' ')[0]}</span></div><button class="btn-logout" onclick="logout()">Logout</button>`;
+      }
+    }
+
+    function showSellerTabs() {
+      if (currentUser && (currentUser.role === 'farmer' || currentUser.role === 'both')) {
+        document.querySelectorAll('.seller-only').forEach(el => el.style.display = '');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('agromarket_token');
+      localStorage.removeItem('agromarket_user');
+      window.location.href = '/';
+    }
+
+    // ---- Tabs ----
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+      document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+      const el = document.getElementById('tab-' + tab);
+      if (el) el.classList.remove('hidden');
+      const btns = document.querySelectorAll('.dash-tab');
+      btns.forEach(b => { if (b.textContent.toLowerCase().includes(tab.replace('-',' ').split(' ')[0])) b.classList.add('active'); });
+
+      if (tab === 'cart') renderCart();
+      if (tab === 'orders') loadOrders();
+      if (tab === 'profile') renderProfile();
+      if (tab === 'my-products') loadMyProducts();
+      if (tab === 'checkout') { checkoutStep = 1; renderCheckout(); }
+    }
+
+    // ---- CART ----
+    function updateCartBadge() {
+      const b = document.getElementById('cartBadge');
+      const c = cart.reduce((s, i) => s + i.qty, 0);
+      b.textContent = c; b.style.display = c > 0 ? 'inline' : 'none';
+    }
+
+    function renderCart() {
+      const container = document.getElementById('tab-cart');
+      if (cart.length === 0) {
+        container.innerHTML = `<div class="cart-empty"><div class="empty-icon">🛒</div><p>Your cart is empty</p><a href="/" class="btn-shop-now">Start Shopping</a></div>`;
+        return;
+      }
+      const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const delivery = subtotal > 2000 ? 0 : 99;
+      const total = subtotal + delivery;
+      const estDays = 3;
+      const estDate = new Date(Date.now() + estDays*24*60*60*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+      container.innerHTML = `
+        <h2 class="section-title">Your Cart</h2>
+        <div class="cart-container">
+          <div class="cart-items">${cart.map(item => `
+            <div class="cart-item">
+              <div class="cart-item-emoji">${item.emoji}</div>
+              <div class="cart-item-info">
+                <div class="cart-item-name">${item.name}</div>
+                <div class="cart-item-seller">by ${item.sellerName} • ${item.location}</div>
+                <div style="font-size:0.8rem;color:var(--success);margin-top:4px">📦 Est. delivery: ${estDate}</div>
+              </div>
+              <div class="cart-item-controls">
+                <button class="qty-btn" onclick="updateQty('${item.productId}',-1)">−</button>
+                <span class="qty-value">${item.qty}</span>
+                <button class="qty-btn" onclick="updateQty('${item.productId}',1)">+</button>
+              </div>
+              <div class="cart-item-price">₹${(item.price*item.qty).toLocaleString('en-IN')}<div class="product-unit">per ${item.unit}</div></div>
+              <button class="btn-remove" onclick="removeFromCart('${item.productId}')">🗑️</button>
+            </div>
+          `).join('')}</div>
+          <div class="cart-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-row"><span>Subtotal (${cart.reduce((s,i)=>s+i.qty,0)} items)</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
+            <div class="summary-row"><span>Delivery</span><span>${delivery===0?'<span style="color:var(--success)">FREE</span>':'₹'+delivery}</span></div>
+            <div class="summary-row"><span>📦 Est. Delivery</span><span>${estDate}</span></div>
+            <div class="summary-row total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>
+            <button class="btn-checkout" onclick="showTab('checkout')">Proceed to Checkout →</button>
+          </div>
+        </div>`;
+    }
+
+    function updateQty(id, delta) {
+      const item = cart.find(i => i.productId === id);
+      if (item) { item.qty = Math.max(1, item.qty + delta); saveCart(); renderCart(); }
+    }
+    function removeFromCart(id) {
+      cart = cart.filter(i => i.productId !== id); saveCart(); updateCartBadge(); renderCart();
+      showToast('Item removed', 'info');
+    }
+    function saveCart() { localStorage.setItem('agromarket_cart', JSON.stringify(cart)); updateCartBadge(); }
+
+    // ---- CHECKOUT ----
+    function renderCheckout() {
+      const container = document.getElementById('tab-checkout');
+      const subtotal = cart.reduce((s,i)=>s+i.price*i.qty,0);
+      const delivery = subtotal>2000?0:99;
+      const total = subtotal+delivery;
+      const estDays = 3;
+      const estDate = new Date(Date.now()+estDays*24*60*60*1000).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+      let steps = `<div class="checkout-steps">
+        <div class="checkout-step ${checkoutStep>=1?'active':''} ${checkoutStep>1?'completed':''}"><div class="step-number">${checkoutStep>1?'✓':'1'}</div><span class="step-label">Address</span></div>
+        <div class="checkout-step ${checkoutStep>=2?'active':''} ${checkoutStep>2?'completed':''}"><div class="step-number">${checkoutStep>2?'✓':'2'}</div><span class="step-label">Payment</span></div>
+        <div class="checkout-step ${checkoutStep>=3?'active':''}"><div class="step-number">3</div><span class="step-label">Confirmation</span></div>
+      </div>`;
+
+      let form = '';
+      if (checkoutStep === 1) {
+        const addr = currentUser.address || {};
+        form = `<div class="checkout-form-panel"><h3>📍 Delivery Address</h3>
+          <div class="form-group"><label>Full Name *</label><input type="text" id="ckName" value="${currentUser.name}" required></div>
+          <div class="form-group"><label>Phone *</label><input type="tel" id="ckPhone" value="${currentUser.phone||''}" required pattern="[6-9][0-9]{9}"></div>
+          <div class="form-group"><label>Address Line 1 *</label><input type="text" id="ckAddr1" value="${addr.line1||''}" placeholder="House/Building, Street" required></div>
+          <div class="form-group"><label>Address Line 2</label><input type="text" id="ckAddr2" value="${addr.line2||''}" placeholder="Area, Landmark"></div>
+          <div class="form-row">
+            <div class="form-group"><label>City</label><input type="text" id="ckCity" value="${addr.city||'Amravati'}"></div>
+            <div class="form-group"><label>Pincode *</label><input type="text" id="ckPincode" value="${addr.pincode||''}" placeholder="444601" maxlength="6" required></div>
+          </div>
+          <div class="form-group"><label>State</label><input type="text" id="ckState" value="${addr.state||'Maharashtra'}"></div>
+          <div style="background:rgba(102,187,106,0.1);border-radius:14px;padding:16px;margin-top:16px;border:1px solid rgba(102,187,106,0.3)">
+            <p style="color:var(--success);font-size:0.9rem">📦 Estimated Delivery: <strong>${estDate}</strong> (${estDays} business days)</p>
+          </div>
+          <div class="checkout-actions"><button class="btn-back" onclick="showTab('cart')">← Back</button><button class="btn-next" onclick="nextStep()">Continue to Payment →</button></div></div>`;
+      } else if (checkoutStep === 2) {
+        form = `<div class="checkout-form-panel"><h3>💳 Payment Method</h3>
+          <div class="payment-methods">
+            <div class="payment-method" data-method="upi" onclick="selectPay('upi')"><div class="payment-method-icon">📱</div><div class="payment-method-info"><h4>UPI Payment</h4><p>Google Pay, PhonePe, Paytm</p></div></div>
+            <div class="payment-method" data-method="card" onclick="selectPay('card')"><div class="payment-method-icon">💳</div><div class="payment-method-info"><h4>Credit/Debit Card</h4><p>Visa, Mastercard, RuPay</p></div></div>
+            <div class="payment-method" data-method="netbanking" onclick="selectPay('netbanking')"><div class="payment-method-icon">🏦</div><div class="payment-method-info"><h4>Net Banking</h4><p>All major banks</p></div></div>
+            <div class="payment-method" data-method="cod" onclick="selectPay('cod')"><div class="payment-method-icon">💵</div><div class="payment-method-info"><h4>Cash on Delivery</h4><p>Pay when you receive</p></div></div>
+          </div>
+          <div id="paymentFormArea"></div>
+          <div style="background:var(--bg-surface);border-radius:14px;padding:20px;margin-top:20px;">
+            <div class="summary-row"><span>Subtotal</span><span>₹${subtotal.toLocaleString('en-IN')}</span></div>
+            <div class="summary-row"><span>Delivery</span><span>${delivery===0?'FREE':'₹'+delivery}</span></div>
+            <div class="summary-row"><span>📦 Est. Delivery</span><span>${estDate}</span></div>
+            <div class="summary-row total"><span>Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>
+          </div>
+          <div class="checkout-actions"><button class="btn-back" onclick="prevStep()">← Back</button><button class="btn-pay" id="btnPay" onclick="processPayment()" style="display:none;flex:1">Pay ₹${total.toLocaleString('en-IN')} →</button></div>
+          <p style="text-align:center;margin-top:16px;color:var(--text-muted);font-size:0.8rem">🔒 Payment data is end-to-end encrypted with AES-256</p></div>`;
+      }
+
+      container.innerHTML = steps + form;
+    }
+
+    function nextStep() {
+      if (checkoutStep===1) {
+        const name=document.getElementById('ckName')?.value.trim();
+        const phone=document.getElementById('ckPhone')?.value.trim();
+        const addr1=document.getElementById('ckAddr1')?.value.trim();
+        const addr2=document.getElementById('ckAddr2')?.value.trim();
+        const city=document.getElementById('ckCity')?.value.trim();
+        const state=document.getElementById('ckState')?.value.trim();
+        const pincode=document.getElementById('ckPincode')?.value.trim();
+        if(!name||!phone||!addr1||!pincode){showToast('Fill all required fields','error');return;}
+        if(!/^[6-9]\d{9}$/.test(phone)){showToast('Enter valid phone number','error');return;}
+        // Save address for use in payment step
+        savedAddress = { name, phone, line1: addr1, line2: addr2||'', city: city||'Amravati', state: state||'Maharashtra', pincode };
+      }
+      checkoutStep++; renderCheckout();
+    }
+    function prevStep() { checkoutStep=Math.max(1,checkoutStep-1); renderCheckout(); }
+
+    function selectPay(method) {
+      selectedPayment = method;
+      document.querySelectorAll('.payment-method').forEach(el=>el.classList.toggle('selected',el.dataset.method===method));
+      document.getElementById('btnPay').style.display='block';
+      const area = document.getElementById('paymentFormArea');
+
+      if (method==='upi') {
+        const total = cart.reduce((s,i)=>s+i.price*i.qty,0) + (cart.reduce((s,i)=>s+i.price*i.qty,0)>2000?0:99);
+        const upiLink = `upi://pay?pa=${UPI_ID}&pn=AgroMarket%20Amravati&am=${total}&cu=INR&tn=AgroMarket%20Order`;
+        area.innerHTML = `<div class="upi-form" style="margin-top:20px">
+          <div style="background:rgba(102,187,106,0.1);border:1px solid rgba(102,187,106,0.3);border-radius:14px;padding:20px;text-align:center">
+            <p style="font-size:1.1rem;font-weight:600;color:var(--success);margin-bottom:8px">Pay to UPI ID</p>
+            <p style="font-size:1.4rem;font-weight:700;color:var(--accent);letter-spacing:1px">${UPI_ID}</p>
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-top:8px">Scan QR or use UPI ID in your payment app</p>
+            <a href="${upiLink}" target="_blank" class="btn-submit" style="display:inline-block;margin-top:16px;max-width:300px;text-decoration:none;text-align:center">📱 Open UPI App to Pay</a>
+          </div>
+          <div class="form-group" style="margin-top:16px"><label>UPI Transaction ID (after payment) *</label>
+            <input type="text" id="upiTxnId" placeholder="Enter UPI transaction/reference ID">
+          </div></div>`;
+      } else if (method==='card') {
+        area.innerHTML = `<div class="card-form" style="margin-top:20px">
+          <div class="form-group"><label>Card Number *</label><input type="text" id="cardNum" placeholder="1234 5678 9012 3456" maxlength="19"></div>
+          <div class="form-row"><div class="form-group"><label>Expiry *</label><input type="text" id="cardExp" placeholder="MM/YY" maxlength="5"></div>
+          <div class="form-group"><label>CVV *</label><input type="password" id="cardCvv" placeholder="***" maxlength="3"></div></div>
+          <div class="form-group"><label>Name on Card *</label><input type="text" id="cardName" placeholder="Cardholder name"></div></div>`;
+      } else if (method==='netbanking') {
+        area.innerHTML = `<div style="margin-top:20px"><div class="form-group"><label>Select Bank *</label>
+          <select id="bankSelect"><option value="">Choose bank</option><option value="sbi">State Bank of India</option><option value="hdfc">HDFC Bank</option><option value="icici">ICICI Bank</option><option value="axis">Axis Bank</option><option value="bom">Bank of Maharashtra</option><option value="bob">Bank of Baroda</option></select></div></div>`;
+      } else if (method==='cod') {
+        area.innerHTML = `<div style="padding:20px;background:rgba(102,187,106,0.1);border-radius:14px;border:1px solid rgba(102,187,106,0.3);margin-top:16px">
+          <p style="color:var(--success);font-weight:600">💵 Cash on Delivery</p><p style="color:var(--text-muted);font-size:0.9rem;margin-top:8px">Pay cash when your order is delivered.</p></div>`;
+      }
+    }
+
+    async function processPayment() {
+      if(!selectedPayment){showToast('Select payment method','error');return;}
+
+      // Validate
+      let paymentData = { method: selectedPayment };
+      if(selectedPayment==='upi'){
+        const txn=document.getElementById('upiTxnId')?.value.trim();
+        if(!txn){showToast('Enter UPI transaction ID after payment','error');return;}
+        paymentData.upiTxnId=txn; paymentData.upiId=UPI_ID;
+      } else if(selectedPayment==='card'){
+        const num=document.getElementById('cardNum')?.value.trim();
+        const exp=document.getElementById('cardExp')?.value.trim();
+        const cvv=document.getElementById('cardCvv')?.value.trim();
+        if(!num||!exp||!cvv){showToast('Fill all card details','error');return;}
+        paymentData.cardLast4=num.slice(-4);
+      } else if(selectedPayment==='netbanking'){
+        const bank=document.getElementById('bankSelect')?.value;
+        if(!bank){showToast('Select your bank','error');return;}
+        paymentData.bank=bank;
+      }
+
+      // Show processing
+      const overlay=document.createElement('div');
+      overlay.className='processing-overlay'; overlay.id='processingOverlay';
+      overlay.innerHTML='<div class="spinner"></div><div class="processing-text">Processing payment...</div><p style="color:var(--text-muted);font-size:0.9rem">🔒 Encrypted with AES-256</p>';
+      document.body.appendChild(overlay);
+
+      try {
+        // Use saved address from step 1
+        const addr = savedAddress || {
+          name: currentUser.name,
+          phone: currentUser.phone,
+          line1: 'Not provided',
+          line2: '',
+          city: 'Amravati',
+          state: 'Maharashtra',
+          pincode: '444601'
+        };
+
+        const orderData = {
+          items: cart.map(i=>({productId:i.productId, name:i.name, qty:i.qty})),
+          deliveryAddress: addr,
+          paymentMethod: selectedPayment,
+          paymentData: paymentData
+        };
+
+        // Encrypt the order data
+        const encrypted = encrypt(orderData);
+
+        const res = await apiFetch('/api/orders', {
+          method: 'POST',
+          body: JSON.stringify({ _encrypted: encrypted })
+        });
+
+        document.getElementById('processingOverlay')?.remove();
+
+        if(res.success) {
+          cart=[]; saveCart();
+          checkoutStep=3;
+          const o=res.order;
+          const estDate = new Date(o.estimatedDelivery).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+          const payLabels={upi:'UPI Payment',card:'Credit/Debit Card',netbanking:'Net Banking',cod:'Cash on Delivery'};
+
+          document.getElementById('tab-checkout').innerHTML = `
+            <div class="checkout-steps"><div class="checkout-step completed"><div class="step-number">✓</div><span class="step-label">Address</span></div>
+              <div class="checkout-step completed"><div class="step-number">✓</div><span class="step-label">Payment</span></div>
+              <div class="checkout-step active"><div class="step-number">3</div><span class="step-label">Confirmation</span></div></div>
+            <div class="checkout-form-panel"><div class="order-success">
+              <div class="success-icon">✓</div><h2>Order Placed Successfully!</h2>
+              <p class="order-id">Order ID: <strong>${o.orderId}</strong></p>
+              <div class="order-details-card">
+                <div class="order-detail-row"><span class="label">Items</span><span class="value">${cart.length||o.total?'':''}${res.order.orderId?'Order confirmed':''}</span></div>
+                <div class="order-detail-row"><span class="label">Payment</span><span class="value">${payLabels[o.paymentMethod]||o.paymentMethod}</span></div>
+                <div class="order-detail-row"><span class="label">Status</span><span class="value" style="color:var(--success)">Order Placed</span></div>
+                <div class="order-detail-row"><span class="label">Total</span><span class="value" style="color:var(--accent);font-size:1.2rem">₹${o.total.toLocaleString('en-IN')}</span></div>
+                <div class="order-detail-row"><span class="label">📦 Est. Delivery</span><span class="value">${estDate}</span></div>
+              </div>
+              ${selectedPayment==='upi'?'<p style="color:var(--success);margin-top:16px;font-size:0.9rem">✅ UPI Payment to '+UPI_ID+' recorded</p>':''}
+              <button class="btn-continue" onclick="showTab('orders')">View My Orders →</button>
+              <a href="/" class="btn-continue" style="background:transparent;border:1px solid var(--border-color);color:var(--text-primary);margin-left:12px;text-decoration:none;display:inline-block">Continue Shopping</a>
+            </div></div>`;
+        } else {
+          showToast(res.message||'Order failed','error');
+        }
+      } catch(err) {
+        document.getElementById('processingOverlay')?.remove();
+        showToast('Error placing order: '+err.message,'error');
+      }
+    }
+
+    // ---- ORDERS ----
+    async function loadOrders() {
+      const container = document.getElementById('tab-orders');
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Loading orders...</div>';
+      try {
+        const res = await apiFetch('/api/orders');
+        if(!res.success||!res.orders.length) {
+          container.innerHTML='<div class="cart-empty"><div class="empty-icon">📋</div><p>No orders yet</p><a href="/" class="btn-shop-now">Start Shopping</a></div>';
+          return;
+        }
+        const statusLabels={placed:'📝 Placed',confirmed:'✅ Confirmed',processing:'⚙️ Processing',shipped:'🚚 Shipped',out_for_delivery:'🏍️ Out for Delivery',delivered:'📦 Delivered',cancelled:'❌ Cancelled'};
+        const payLabels={upi:'UPI Payment',card:'Card',netbanking:'Net Banking',cod:'Cash on Delivery'};
+
+        container.innerHTML = `<h2 class="section-title">My Orders</h2><div class="orders-list">${res.orders.map(o=>{
+          const date=new Date(o.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+          const estDate=new Date(o.estimatedDelivery).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+          // Live tracking timeline
+          const timeline = o.tracking.map((t,i)=>`
+            <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:${i<o.tracking.length-1?'16px':'0'}">
+              <div style="width:12px;height:12px;border-radius:50%;background:${i===o.tracking.length-1?'var(--accent)':'var(--success)'};margin-top:4px;flex-shrink:0"></div>
+              <div><div style="font-weight:600;font-size:0.9rem">${t.message}</div><div style="font-size:0.8rem;color:var(--text-muted)">${new Date(t.timestamp).toLocaleString('en-IN')}</div></div>
+            </div>`).join('');
+
+          return `<div class="order-card">
+            <div class="order-card-header"><div><strong>Order #${o.orderId}</strong><p style="color:var(--text-muted);font-size:0.85rem">${date}</p></div>
+              <span class="order-status ${o.status}">${statusLabels[o.status]||o.status}</span></div>
+            <div class="order-items-list">${o.items.map(i=>`<span class="order-item-chip">${i.productEmoji} ${i.productName} × ${i.qty}</span>`).join('')}</div>
+            <div style="background:var(--bg-surface);border-radius:10px;padding:16px;margin-top:12px">
+              <p style="font-weight:600;margin-bottom:12px;font-size:0.95rem">📦 Order Tracking</p>
+              ${timeline}
+            </div>
+            <div class="order-card-footer">
+              <span style="font-size:0.85rem;color:var(--text-muted)">💳 ${payLabels[o.paymentMethod]||o.paymentMethod} | 📦 Est: ${estDate}</span>
+              <span class="order-total">₹${o.total.toLocaleString('en-IN')}</span>
+            </div></div>`;
+        }).join('')}</div>`;
+      } catch(err) {
+        container.innerHTML='<div class="cart-empty"><div class="empty-icon">❌</div><p>Error loading orders</p></div>';
+      }
+    }
+
+    // ---- PROFILE ----
+    async function renderProfile() {
+      const container = document.getElementById('tab-profile');
+      try {
+        const res = await apiFetch('/api/users/profile');
+        if(!res.success){container.innerHTML='<p>Error loading profile</p>';return;}
+        const u = res.user;
+        currentUser = u;
+        localStorage.setItem('agromarket_user', JSON.stringify(u));
+        const addr=u.address||{};
+        const roleBadge = {buyer:'🛒 Buyer',farmer:'🌾 Farmer/Seller',both:'🛒🌾 Buyer & Seller'};
+
+        container.innerHTML = `
+          <h2 class="section-title">My Profile</h2>
+          <div class="sell-container">
+            <div class="sell-form">
+              <div style="text-align:center;margin-bottom:24px">
+                <div class="user-avatar" style="width:80px;height:80px;font-size:2rem;margin:0 auto 12px">${u.name.split(' ').map(n=>n[0]).join('').toUpperCase()}</div>
+                <h3 style="margin-bottom:4px">${u.name}</h3>
+                <span style="padding:4px 14px;border-radius:50px;font-size:0.8rem;background:rgba(76,175,80,0.2);color:var(--success)">${roleBadge[u.role]||u.role}</span>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-top:8px">Member since ${new Date(u.createdAt).toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</p>
+              </div>
+              <div class="form-group"><label>Full Name</label><input type="text" id="profName" value="${u.name}"></div>
+              <div class="form-row">
+                <div class="form-group"><label>Email (cannot change)</label><input type="email" value="${u.email}" disabled style="opacity:0.6"></div>
+                <div class="form-group"><label>Phone</label><input type="tel" id="profPhone" value="${u.phone||''}"></div>
+              </div>
+              <div class="form-group"><label>Location</label><input type="text" id="profLocation" value="${u.location||''}"></div>
+              <div class="form-group"><label>Bio</label><textarea id="profBio" placeholder="Tell us about yourself...">${u.bio||''}</textarea></div>
+              <h4 style="margin:24px 0 16px;font-size:1.1rem">📍 Delivery Address</h4>
+              <div class="form-group"><label>Address Line 1</label><input type="text" id="profAddr1" value="${addr.line1||''}" placeholder="House/Street"></div>
+              <div class="form-group"><label>Address Line 2</label><input type="text" id="profAddr2" value="${addr.line2||''}" placeholder="Area, Landmark"></div>
+              <div class="form-row">
+                <div class="form-group"><label>City</label><input type="text" id="profCity" value="${addr.city||'Amravati'}"></div>
+                <div class="form-group"><label>Pincode</label><input type="text" id="profPincode" value="${addr.pincode||''}" maxlength="6"></div>
+              </div>
+              <div class="form-group"><label>State</label><input type="text" id="profState" value="${addr.state||'Maharashtra'}"></div>
+              <button class="btn-submit" onclick="updateProfile()">💾 Save Profile</button>
+
+              <h4 style="margin:32px 0 16px;font-size:1.1rem">🔐 Change Password</h4>
+              <div class="form-group"><label>Current Password</label><input type="password" id="profCurPass" placeholder="Current password"></div>
+              <div class="form-group"><label>New Password</label><input type="password" id="profNewPass" placeholder="New password (min 6 chars)"></div>
+              <button class="btn-submit" style="background:linear-gradient(135deg,var(--primary),var(--primary-light))" onclick="changePassword()">🔑 Change Password</button>
+            </div>
+          </div>`;
+      } catch(err) {
+        container.innerHTML='<p>Error loading profile</p>';
+      }
+    }
+
+    async function updateProfile() {
+      const data = {
+        name: document.getElementById('profName').value.trim(),
+        phone: document.getElementById('profPhone').value.trim(),
+        location: document.getElementById('profLocation').value.trim(),
+        bio: document.getElementById('profBio').value.trim(),
+        address: {
+          line1: document.getElementById('profAddr1').value.trim(),
+          line2: document.getElementById('profAddr2').value.trim(),
+          city: document.getElementById('profCity').value.trim(),
+          state: document.getElementById('profState').value.trim(),
+          pincode: document.getElementById('profPincode').value.trim()
+        }
+      };
+      if(!data.name){showToast('Name is required','error');return;}
+      const encrypted = encrypt(data);
+      const res = await apiFetch('/api/users/profile', { method:'PUT', body:JSON.stringify({_encrypted:encrypted}) });
+      if(res.success){
+        currentUser=res.user; localStorage.setItem('agromarket_user',JSON.stringify(res.user));
+        showToast('Profile updated!','success'); renderNav();
+      } else showToast(res.message,'error');
+    }
+
+    async function changePassword() {
+      const cur=document.getElementById('profCurPass').value;
+      const nw=document.getElementById('profNewPass').value;
+      if(!cur||!nw){showToast('Fill both password fields','error');return;}
+      if(nw.length<6){showToast('New password must be 6+ characters','error');return;}
+      const res = await apiFetch('/api/users/password',{method:'PUT',body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+      if(res.success){showToast('Password changed!','success');document.getElementById('profCurPass').value='';document.getElementById('profNewPass').value='';}
+      else showToast(res.message,'error');
+    }
+
+    // ---- SELL PRODUCT ----
+    async function submitProduct() {
+      const name=document.getElementById('sellName').value.trim();
+      const category=document.getElementById('sellCategory').value;
+      const price=parseFloat(document.getElementById('sellPrice').value);
+      const unit=document.getElementById('sellUnit').value;
+      const stock=parseInt(document.getElementById('sellStock').value);
+      const location=document.getElementById('sellLocation').value.trim();
+      const description=document.getElementById('sellDescription').value.trim();
+
+      if(!name||!category||!price||!stock||!location){showToast('Fill all required fields','error');return;}
+      if(price<1){showToast('Price must be positive','error');return;}
+      if(stock<1){showToast('Stock must be at least 1','error');return;}
+
+      const emojis={crops:'🌾',vegetables:'🥬',fruits:'🍊',grains:'🌽',pulses:'🫘',spices:'🌶️',dairy:'🥛',oilseeds:'🌻'};
+      const res = await apiFetch('/api/products',{method:'POST',body:JSON.stringify({name,category,price,unit,stock,location,description,emoji:emojis[category]||'📦'})});
+      if(res.success){
+        showToast(res.message,'success');
+        ['sellName','sellPrice','sellStock','sellLocation','sellDescription'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('sellCategory').value='';
+      } else showToast(res.message,'error');
+    }
+
+    // ---- MY PRODUCTS (Seller) ----
+    async function loadMyProducts() {
+      const container=document.getElementById('tab-my-products');
+      container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">Loading...</div>';
+      try {
+        const res = await apiFetch('/api/products/seller/my');
+        if(!res.success||!res.products.length){
+          container.innerHTML='<div class="cart-empty"><div class="empty-icon">🏪</div><p>No products listed yet</p><button class="btn-shop-now" onclick="showTab(\'sell\')">List Your First Product</button></div>';
+          return;
+        }
+        container.innerHTML=`<h2 class="section-title">My Products (${res.count})</h2>
+          <div class="products-grid">${res.products.map(p=>`
+            <div class="product-card">
+              <div class="product-image"><span>${p.emoji}</span>
+                ${p.stock===0?'<span class="product-badge" style="background:var(--error)">Out of Stock</span>':
+                  p.stock<10?'<span class="product-badge" style="background:var(--warning)">Low Stock: '+p.stock+'</span>':''}
+              </div>
+              <div class="product-info">
+                <div class="product-name">${p.name}</div>
+                <div class="product-location">📍 ${p.location}</div>
+                <div class="product-meta">
+                  <div><div class="product-price">₹${p.price.toLocaleString('en-IN')}</div><div class="product-unit">per ${p.unit}</div></div>
+                  <div style="font-size:0.9rem;color:var(--text-muted)">Stock: ${p.stock}</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="btn-add-cart" style="flex:1;font-size:0.85rem" onclick="editProduct('${p._id}','${p.name}',${p.price},${p.stock})">✏️ Edit</button>
+                  <button class="btn-add-cart" style="flex:0.6;font-size:0.85rem;background:linear-gradient(135deg,#ef5350,#c62828)" onclick="deleteProduct('${p._id}','${p.name}')">🗑️</button>
+                </div>
+              </div>
+            </div>`).join('')}</div>`;
+      } catch(err){
+        container.innerHTML='<p>Error loading products</p>';
+      }
+    }
+
+    function editProduct(id, name, price, stock) {
+      const newPrice = prompt(`Edit price for "${name}" (current: ₹${price}):`, price);
+      const newStock = prompt(`Edit stock for "${name}" (current: ${stock}):`, stock);
+      if(newPrice!==null&&newStock!==null) {
+        apiFetch('/api/products/'+id,{method:'PUT',body:JSON.stringify({price:parseFloat(newPrice),stock:parseInt(newStock)})})
+          .then(res=>{if(res.success){showToast('Product updated!','success');loadMyProducts();}else showToast(res.message,'error');});
+      }
+    }
+
+    async function deleteProduct(id, name) {
+      if(!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+      const res = await apiFetch('/api/products/'+id,{method:'DELETE'});
+      if(res.success){showToast(res.message,'success');loadMyProducts();}
+      else showToast(res.message,'error');
+    }
+  </script>
+</body>
+</html>
